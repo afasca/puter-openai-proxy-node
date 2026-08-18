@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Proxy Node — OpenAI Compatible</title>
+<meta name="theme-color" content="#0a0a0b" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  darkMode: 'class',
+  theme: {
+    extend: {
+      fontFamily: { mono: ['ui-monospace','SFMono-Regular','Menlo','Consolas','monospace'] },
+      colors: { base: '#0a0a0b', panel: '#111113', edge: '#1e1e22', muted: '#8a8a93' }
+    }
+  }
+}
+</script>
+<style>
+  html,body{background:#0a0a0b;}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:#26262b;border-radius:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+  @keyframes pulse-ring{0%{transform:scale(.9);opacity:.7}70%{transform:scale(2.2);opacity:0}100%{opacity:0}}
+  .ring::after{content:'';position:absolute;inset:0;border-radius:9999px;animation:pulse-ring 2s cubic-bezier(.2,.6,.4,1) infinite;background:currentColor}
+</style>
+    <!-- puter-pwa: generated, do not edit -->
+    <link rel="manifest" href="../../manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="../../icons/icon-192.png">
+    <link rel="apple-touch-icon" href="../../icons/apple-touch-icon-180.png">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Proxy Node">
+    <!-- /puter-pwa -->
+</head>
+<body class="bg-base text-neutral-200 font-mono antialiased min-h-screen">
+  <div class="max-w-3xl mx-auto px-5 sm:px-8 py-14 sm:py-20">
+
+    <header class="flex items-start justify-between gap-4 mb-12">
+      <div>
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-9 h-9 rounded-lg bg-neutral-100 flex items-center justify-center">
+            <svg viewBox="0 0 24 24" class="w-5 h-5 text-black" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/><circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/></svg>
+          </div>
+          <h1 class="text-lg sm:text-xl font-semibold tracking-tight text-neutral-100">Proxy Node</h1>
+        </div>
+        <p class="text-sm text-muted leading-relaxed max-w-md">
+          This is a proxy node. Use the Base URL and the API Key below to connect.
+        </p>
+      </div>
+      <div id="statusBadge" class="shrink-0 flex items-center gap-2.5 rounded-full border border-edge bg-panel px-3.5 py-2 text-xs">
+        <span class="relative inline-flex w-2.5 h-2.5">
+          <span id="statusDot" class="ring relative inline-flex w-2.5 h-2.5 rounded-full text-neutral-500 bg-neutral-500"></span>
+        </span>
+        <span id="statusText" class="text-muted">Checking…</span>
+      </div>
+    </header>
+
+    <section class="rounded-xl border border-edge bg-panel overflow-hidden mb-8">
+      <div class="px-5 py-3 border-b border-edge text-[11px] uppercase tracking-widest text-muted">Endpoint</div>
+      <dl class="divide-y divide-edge">
+        <div class="flex items-center gap-4 px-5 py-4">
+          <dt class="w-28 shrink-0 text-xs text-muted">Base URL</dt>
+          <dd id="baseUrl" class="text-sm text-neutral-100 break-all select-all">—</dd>
+        </div>
+        <div class="flex items-center gap-4 px-5 py-4">
+          <dt class="w-28 shrink-0 text-xs text-muted">API Key</dt>
+          <dd id="apiKey" class="text-sm text-emerald-300 break-all select-all">—</dd>
+        </div>
+        <div class="flex items-center gap-4 px-5 py-4">
+          <dt class="w-28 shrink-0 text-xs text-muted">Compatible</dt>
+          <dd class="text-sm text-neutral-300">OpenAI <span class="text-muted">/v1</span> &amp; <span class="text-muted">/api/v1</span></dd>
+        </div>
+      </dl>
+    </section>
+
+    <section class="rounded-xl border border-edge bg-panel overflow-hidden mb-8">
+      <div class="px-5 py-3 border-b border-edge text-[11px] uppercase tracking-widest text-muted">Upstream</div>
+      <dl class="divide-y divide-edge">
+        <div class="flex items-center gap-4 px-5 py-4">
+          <dt class="w-28 shrink-0 text-xs text-muted">Provider</dt>
+          <dd id="upProvider" class="text-sm text-neutral-100 break-all select-all">—</dd>
+        </div>
+        <div class="flex items-center gap-4 px-5 py-4">
+          <dt class="w-28 shrink-0 text-xs text-muted">Upstream URL</dt>
+          <dd id="upUrl" class="text-sm text-neutral-100 break-all select-all">—</dd>
+        </div>
+        <div class="flex items-center gap-4 px-5 py-4">
+          <dt class="w-28 shrink-0 text-xs text-muted">Upstream Key</dt>
+          <dd id="upKey" class="text-sm text-neutral-300 break-all select-all">—</dd>
+        </div>
+      </dl>
+    </section>
+
+    <section class="rounded-xl border border-edge bg-panel overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-3 border-b border-edge">
+        <span class="text-[11px] uppercase tracking-widest text-muted">Available Models</span>
+        <span id="modelCount" class="text-[11px] text-muted">—</span>
+      </div>
+      <div id="modelsBody" class="p-5">
+        <div id="modelsLoading" class="text-sm text-muted py-8 text-center">Loading models…</div>
+        <div id="modelsList" class="hidden space-y-6"></div>
+        <div id="modelsError" class="hidden text-sm text-red-400/80 py-8 text-center"></div>
+      </div>
+    </section>
+
+    <footer class="mt-12 text-center text-[11px] text-muted/70">
+      <a href="https://developer.puter.com" target="_blank" rel="noopener" class="hover:text-muted transition-colors">Powered by Puter</a>
+    </footer>
+  </div>
+
+  <script type="module">
+    // ⚠️ Replace with your deployed worker URL, e.g. https://<your-worker>.puter.work
+    const WORKER_URL = "https://YOUR-WORKER.puter.work";
+
+    const $ = (id) => document.getElementById(id);
+    $("baseUrl").textContent = WORKER_URL + "/v1";
+
+    async function loadNodeInfo() {
+      try {
+        const r = await fetch(WORKER_URL + "/api/nodeinfo", { cache: "no-store" });
+        const j = await r.json();
+        if (j.base_url) $("baseUrl").textContent = j.base_url;
+        if (j.key) $("apiKey").textContent = j.key;
+        if (j.upstream) {
+          $("upProvider").textContent = j.upstream.provider || "—";
+          $("upUrl").textContent = j.upstream.url || "—";
+          $("upKey").textContent = j.upstream.key || "—";
+        }
+      } catch (e) { $("apiKey").textContent = "unavailable"; }
+    }
+
+    async function checkHealth() {
+      const dot = $("statusDot"), text = $("statusText");
+      try {
+        const r = await fetch(WORKER_URL + "/api/healthz", { cache: "no-store" });
+        const j = await r.json().catch(() => ({}));
+        if (r.ok && j.status === "ok") {
+          dot.className = "ring relative inline-flex w-2.5 h-2.5 rounded-full text-emerald-500 bg-emerald-500";
+          text.textContent = "Online"; text.className = "text-emerald-400"; return;
+        }
+        throw new Error("bad");
+      } catch (e) {
+        dot.className = "relative inline-flex w-2.5 h-2.5 rounded-full text-red-500 bg-red-500";
+        text.textContent = "Offline"; text.className = "text-red-400";
+      }
+    }
+
+    function providerOf(id) {
+      const s = id.toLowerCase();
+      if (s.includes("claude")) return "Anthropic";
+      if (s.startsWith("gpt") || s.startsWith("o1") || s.startsWith("o3") || s.startsWith("o4") || s.includes("openai") || s.startsWith("chatgpt")) return "OpenAI";
+      if (s.includes("gemini") || s.includes("gemma") || s.includes("palm")) return "Google";
+      if (s.includes("grok") || s.includes("xai")) return "xAI";
+      if (s.includes("deepseek")) return "DeepSeek";
+      if (s.includes("mistral") || s.includes("mixtral") || s.includes("codestral") || s.includes("ministral")) return "Mistral";
+      if (s.includes("llama") || s.includes("meta")) return "Meta";
+      if (s.includes("qwen") || s.includes("qwq")) return "Alibaba";
+      if (s.includes("kimi") || s.includes("moonshot")) return "Moonshot";
+      if (s.includes("glm") || s.includes("zhipu")) return "Z.AI";
+      return "Other";
+    }
+    const ORDER = ["OpenAI","Anthropic","Google","xAI","DeepSeek","Mistral","Meta","Alibaba","Moonshot","Z.AI","Other"];
+    function esc(s){return s.replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
+
+    async function loadModels() {
+      const loading = $("modelsLoading"), list = $("modelsList"), errEl = $("modelsError");
+      try {
+        const r = await fetch(WORKER_URL + "/api/models-public", { cache: "no-store" });
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        const j = await r.json();
+        const models = (j && j.data) || [];
+        if (!models.length) throw new Error("No models returned");
+        const groups = {};
+        for (const m of models) { const p = providerOf(m.id); (groups[p] = groups[p] || []).push(m.id); }
+        const keys = Object.keys(groups).sort((a,b)=>{const ia=ORDER.indexOf(a),ib=ORDER.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib);});
+        let html = "";
+        for (const k of keys) {
+          const items = groups[k].sort();
+          html += `<div><div class="flex items-center gap-2.5 mb-3"><span class="text-xs font-semibold text-neutral-300">${esc(k)}</span><span class="text-[11px] text-muted">${items.length}</span><span class="flex-1 h-px bg-edge"></span></div><div class="flex flex-wrap gap-1.5">${items.map(id=>{const think=/-thinking$/.test(id);return `<span class="inline-flex items-center gap-1 rounded-md border border-edge bg-base px-2 py-1 text-[11px] ${think?'text-amber-300/90':'text-neutral-300'}">${esc(id)}</span>`;}).join("")}</div></div>`;
+        }
+        list.innerHTML = html;
+        $("modelCount").textContent = models.length + " models";
+        loading.classList.add("hidden"); list.classList.remove("hidden");
+      } catch (e) {
+        loading.classList.add("hidden");
+        errEl.textContent = "Could not load models — " + (e.message || e);
+        errEl.classList.remove("hidden");
+      }
+    }
+
+    checkHealth(); loadNodeInfo(); loadModels();
+    setInterval(checkHealth, 15000);
+  </script>
+</body>
+</html>
