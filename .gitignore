@@ -1,0 +1,23 @@
+# Secrets — never commit real credentials
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+secrets.json
+
+# Dependencies / build
+node_modules/
+dist/
+build/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
